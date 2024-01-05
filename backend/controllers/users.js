@@ -11,6 +11,7 @@ const getUsers = (req, res, next) => {
     .then((users) => res.send(users))
     .catch(next);
 };
+
 const getUser = (req, res, next) => {
   const { userId } = req.params;
   User.findById(userId)
@@ -38,26 +39,30 @@ const createUser = (req, res, next) => {
     password,
   } = req.body;
 
-  bcrypt.hash(password, 10)
-    .then((hash) => User.create({
-      name,
-      about,
-      avatar,
-      email,
-      password: hash,
-    }))
+  User.findOne({ email })
     .then((user) => {
-      res.send(formatUser(user));
-    })
-    .catch((err) => {
-      if (err.code === 11000) {
-        next(new ConflictError('Пользователь уже создан'));
-      } else if (err.name === 'ValidationError') {
-        next(new BadRequestError('Неверно'));
-      } else {
-        next(err);
+      if (user) {
+        throw new ConflictError('Пользователь уже создан');
       }
-    });
+      bcrypt.hash(password, 10)
+        .then((hash) => User.create({
+          name,
+          about,
+          avatar,
+          email,
+          password: hash,
+        }))
+        .then((us) => {
+          res.send(formatUser(us));
+        })
+        .catch((err) => {
+          if (err.name === 'ValidationError') {
+            next(new BadRequestError('Неверно'));
+          } else {
+            next(err);
+          }
+        });
+    }).catch(next);
 };
 
 const updateUser = (req, res, next) => {
@@ -105,12 +110,12 @@ const updateAvatar = (req, res, next) => {
 };
 
 const getCurrentUser = (req, res, next) => {
-  User.findOne({ _id: req.user._id })
+  User.findById(req.user._id)
     .then((user) => {
       if (!user) {
         throw new NotFoundError('Пользователь не найден');
       }
-      return res.send(formatUser(user));
+      return res.send(user);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -123,17 +128,16 @@ const getCurrentUser = (req, res, next) => {
 
 const login = (req, res, next) => {
   const { email, password } = req.body;
-  return User.findUserByCredentials(email, password)
+  User.findUserByCredentials(email, password)
     .then((user) => {
       const token = jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' });
       res.cookie('jwt', token, {
-        maxAge: 24 * 7 * 60 * 60,
+        maxAge: 3600000 * 24 * 7,
         httpOnly: true,
         sameSite: true,
       })
-        .send({ message: 'Успешная авторизация' });
-    })
-    .catch((err) => {
+        .send({ message: 'Авторизация прошла успешно' });
+    }).catch((err) => {
       next(err);
     });
 };

@@ -35,18 +35,18 @@ function App() {
   const [infoTooltip, setInfoTooltip] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem('jwt')) {
-      const jwt = localStorage.getItem('jwt');
-      auth.getToken(jwt)
+      auth.getToken()
         .then((res) => {
           if (res) {
             setIsLoggedIn(true);
-            setMailName(res.data.email);
+            setMailName(res.email);
             navigate('/', { replace: true });
           }
         })
-        .catch((err) => console.log(`Ошибка: ${err}`));
-    }
+        .catch((err) =>{ 
+          setIsLoggedIn(false);
+          console.log(`Ошибка: ${err}`)});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function onRegister(email, password) {
@@ -66,7 +66,6 @@ function App() {
   function onLogin(email, password) {
     auth.authorize(email, password)
       .then((res) => {
-        localStorage.setItem('jwt', res.token);
         setIsLoggedIn(true);
         setMailName(email);
         navigate('/', { replace: true });
@@ -114,20 +113,18 @@ function App() {
   function onSignOut() {
     setIsLoggedIn(false);
     setMailName(null);
-    navigate('/signin');
-    localStorage.removeItem('jwt');
+   navigate("/signin", { replace: true });
   }
 
   function handleCardLike(card) {
     // Снова проверяем, есть ли уже лайк на этой карточке
-    const isLiked = card.likes.some(i => i._id === currentUser._id);
-
+    const isLiked = card.likes.some((user) => user === currentUser._id);
     // Отправляем запрос в API и получаем обновлённые данные карточки
     api.changeLikeCardStatus(card._id, !isLiked).then((newCard) => {
       console.log(card._id)
       console.log(newCard)
       setCards((state) => {
-        return state.map((c) => c._id === card._id ? newCard : c)
+        state.map((user) => (user._id === card._id ? newCard : user))
       });
     })
       .catch((err) => console.log(`Ошибка: ${err}`))
