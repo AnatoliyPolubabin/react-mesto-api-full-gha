@@ -77,6 +77,7 @@ const deleteCard = (req, res, next) => {
       } else if (card.owner.toString() !== req.user._id) {
         throw new ForbiddenError('Удаление невозможно');
       }
+      // return Card.findByIdAndRemove(cardId);
       return card.deleteOne().then(() => res.send({ message: 'Карточка удалена' }));
     })
     .catch((err) => {

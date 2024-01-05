@@ -1,15 +1,4 @@
 const { celebrate, Joi } = require('celebrate');
-const validator = require('validator');
-
-// Кастомный валидатор для проверки URL
-const validateURL = (value, helpers) => {
-  if (!validator.isURL(value, { require_protocol: true })) {
-    return helpers.error('any.invalid');
-  }
-  return value;
-};
-
-const urlRegex = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/;
 
 const validationLogin = celebrate({
   body: Joi.object().keys({
@@ -22,7 +11,7 @@ const validationCreateUser = celebrate({
   body: Joi.object().keys({
     name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(30),
-    avatar: Joi.string().uri().custom(validateURL),
+    avatar: Joi.string().uri({ scheme: ['http', 'https'] }),
     email: Joi.string().required().email(),
     password: Joi.string().required(),
   }),
@@ -37,7 +26,7 @@ const validationUpdateUser = celebrate({
 
 const validationUpdateAvatar = celebrate({
   body: Joi.object().keys({
-    avatar: Joi.string().uri().custom(validateURL),
+    avatar: Joi.string().uri({ scheme: ['http', 'https'] }),
   }),
 });
 
@@ -50,7 +39,7 @@ const validationUserId = celebrate({
 const validationCreateCard = celebrate({
   body: Joi.object().keys({
     name: Joi.string().min(2).max(30).required(),
-    link: Joi.string().uri().pattern(urlRegex).required(),
+    link: Joi.string().required().uri({ scheme: ['http', 'https'] }),
   }),
 });
 

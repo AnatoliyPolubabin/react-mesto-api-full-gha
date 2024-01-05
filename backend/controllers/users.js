@@ -1,3 +1,4 @@
+const { JWT_SECRET, NODE_ENV } = process.env;
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
@@ -130,16 +131,22 @@ const login = (req, res, next) => {
   const { email, password } = req.body;
   User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' });
+      const token = jwt.sign({ _id: user._id }, `${NODE_ENV === 'production' ? JWT_SECRET : 'yandex-praktikum'}`, { expiresIn: '7d' });
       res.cookie('jwt', token, {
         maxAge: 3600000 * 24 * 7,
         httpOnly: true,
         sameSite: true,
       })
         .send({ message: 'Авторизация прошла успешно' });
-    }).catch((err) => {
+    })
+    .catch((err) => {
       next(err);
     });
+};
+
+const logout = (req, res) => {
+  res.clearCookie('jwt');
+  res.json({ message: 'Вы успешно вышли' });
 };
 
 module.exports = {
@@ -150,4 +157,5 @@ module.exports = {
   updateAvatar,
   getCurrentUser,
   login,
+  logout,
 };
